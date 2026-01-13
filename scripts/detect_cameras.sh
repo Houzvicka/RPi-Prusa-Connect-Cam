@@ -63,9 +63,9 @@ detect_usb_cameras() {
 
 # Display menu and get user selection
 select_camera() {
-    echo ""
-    echo "=== Detected Cameras ==="
-    echo ""
+    echo "" > /dev/tty
+    echo "=== Detected Cameras ===" > /dev/tty
+    echo "" > /dev/tty
 
     local cameras=()
     local i=1
@@ -78,7 +78,7 @@ select_camera() {
             local cam_name
             cam_id=$(echo "$cam" | cut -d: -f2)
             cam_name=$(echo "$cam" | cut -d: -f3)
-            echo "  $i) [RPi Camera] $cam_name (Camera $cam_id)"
+            echo "  $i) [RPi Camera] $cam_name (Camera $cam_id)" > /dev/tty
             ((i++))
         fi
     done < <(detect_rpi_cameras)
@@ -91,25 +91,25 @@ select_camera() {
             local cam_name
             device=$(echo "$cam" | cut -d: -f2)
             cam_name=$(echo "$cam" | cut -d: -f3)
-            echo "  $i) [USB Webcam] $cam_name ($device)"
+            echo "  $i) [USB Webcam] $cam_name ($device)" > /dev/tty
             ((i++))
         fi
     done < <(detect_usb_cameras)
 
-    echo ""
+    echo "" > /dev/tty
 
     if [[ ${#cameras[@]} -eq 0 ]]; then
-        echo "ERROR: No cameras detected!"
-        echo ""
-        echo "For RPi Camera Module:"
-        echo "  - Ensure camera is properly connected"
-        echo "  - Enable camera in raspi-config"
-        echo "  - Reboot after enabling"
-        echo ""
-        echo "For USB Webcam:"
-        echo "  - Ensure webcam is plugged in"
-        echo "  - Try a different USB port"
-        echo ""
+        echo "ERROR: No cameras detected!" > /dev/tty
+        echo "" > /dev/tty
+        echo "For RPi Camera Module:" > /dev/tty
+        echo "  - Ensure camera is properly connected" > /dev/tty
+        echo "  - Enable camera in raspi-config" > /dev/tty
+        echo "  - Reboot after enabling" > /dev/tty
+        echo "" > /dev/tty
+        echo "For USB Webcam:" > /dev/tty
+        echo "  - Ensure webcam is plugged in" > /dev/tty
+        echo "  - Try a different USB port" > /dev/tty
+        echo "" > /dev/tty
         return 1
     fi
 
@@ -119,9 +119,10 @@ select_camera() {
         if [[ "$selection" =~ ^[0-9]+$ ]] && [[ "$selection" -ge 1 ]] && [[ "$selection" -lt "$i" ]]; then
             break
         fi
-        echo "Invalid selection. Please enter a number between 1 and $((i-1))"
+        echo "Invalid selection. Please enter a number between 1 and $((i-1))" > /dev/tty
     done
 
+    # Only output the selected camera to stdout (for capture)
     echo "${cameras[$((selection-1))]}"
 }
 
