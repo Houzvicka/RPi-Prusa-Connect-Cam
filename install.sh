@@ -5,10 +5,11 @@
 #
 # This script will:
 # 1. Install required dependencies (curl, v4l-utils, python3, ffmpeg)
-# 2. Detect and let you select a camera (RPi Camera or USB webcam)
-# 3. Configure Prusa Connect integration (token + fingerprint)
-# 4. Set up a local MJPEG camera stream (Python-based, lightweight)
-# 5. Enable auto-start on boot via systemd
+# 2. Download and install scripts
+# 3. Detect and let you select a camera (RPi Camera or USB webcam)
+# 4. Configure Prusa Connect integration (token + fingerprint)
+# 5. Install systemd services for auto-start on boot
+# 6. Start the camera stream and upload services
 #
 
 set -e
