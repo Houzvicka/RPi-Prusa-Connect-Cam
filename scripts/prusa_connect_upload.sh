@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 # Prusa Connect Camera Upload Script
-# Uploads snapshots from the stream server to Prusa Connect
+# Reads snapshots from /tmp/stream_snapshot.jpg (created by stream server)
+# and uploads them to Prusa Connect API every UPLOAD_INTERVAL seconds
 #
 
 CONFIG_FILE="/etc/prusa_cam.conf"

@@ -1,7 +1,10 @@
 #!/bin/bash
 #
 # Camera Stream Server Script
-# Serves MJPEG stream via HTTP
+# Lightweight Python-based MJPEG streaming server
+# - Streams live video on port 8080
+# - Saves snapshots to /tmp/stream_snapshot.jpg for Prusa Connect uploads
+# - All temp files in RAM (tmpfs) to protect SD card
 #
 
 CONFIG_FILE="/etc/prusa_cam.conf"
