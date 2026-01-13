@@ -66,7 +66,7 @@ fi
 # Check for Raspberry Pi
 if ! grep -q "Raspberry Pi\|BCM" /proc/cpuinfo 2>/dev/null; then
     print_warning "This doesn't appear to be a Raspberry Pi"
-    read -p "Continue anyway? [y/N]: " confirm
+    read -p "Continue anyway? [y/N]: " confirm < /dev/tty
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         exit 1
     fi
@@ -74,7 +74,7 @@ fi
 
 echo "This script will install and configure the Prusa Connect camera service."
 echo ""
-read -p "Continue with installation? [Y/n]: " confirm
+read -p "Continue with installation? [Y/n]: " confirm < /dev/tty
 if [[ "$confirm" == "n" || "$confirm" == "N" ]]; then
     echo "Installation cancelled."
     exit 0
@@ -199,7 +199,7 @@ echo "  5. Copy the Token shown"
 echo ""
 
 while true; do
-    read -p "Enter your Prusa Connect Token: " TOKEN
+    read -p "Enter your Prusa Connect Token: " TOKEN < /dev/tty
     if [[ -n "$TOKEN" ]]; then
         break
     fi

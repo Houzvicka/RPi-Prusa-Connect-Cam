@@ -115,7 +115,7 @@ select_camera() {
 
     local selection
     while true; do
-        read -p "Select camera [1-$((i-1))]: " selection
+        read -p "Select camera [1-$((i-1))]: " selection < /dev/tty
         if [[ "$selection" =~ ^[0-9]+$ ]] && [[ "$selection" -ge 1 ]] && [[ "$selection" -lt "$i" ]]; then
             break
         fi

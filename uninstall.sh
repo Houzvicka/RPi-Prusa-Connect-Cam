@@ -27,7 +27,7 @@ fi
 
 echo "This will remove the Prusa Connect camera service."
 echo ""
-read -p "Are you sure you want to uninstall? [y/N]: " confirm
+read -p "Are you sure you want to uninstall? [y/N]: " confirm < /dev/tty
 if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
     echo "Uninstall cancelled."
     exit 0
@@ -59,7 +59,7 @@ rm -rf /opt/prusa-cam
 echo ""
 if [[ -f /etc/prusa_cam.conf ]]; then
     echo "Configuration file contains your camera token and fingerprint."
-    read -p "Remove configuration file? [y/N]: " remove_config
+    read -p "Remove configuration file? [y/N]: " remove_config < /dev/tty
     if [[ "$remove_config" == "y" || "$remove_config" == "Y" ]]; then
         rm -f /etc/prusa_cam.conf
         echo "Configuration file removed."
@@ -70,7 +70,7 @@ fi
 
 # Ask about ustreamer
 echo ""
-read -p "Remove uStreamer? [y/N]: " remove_ustreamer
+read -p "Remove uStreamer? [y/N]: " remove_ustreamer < /dev/tty
 if [[ "$remove_ustreamer" == "y" || "$remove_ustreamer" == "Y" ]]; then
     rm -f /usr/local/bin/ustreamer
     echo "uStreamer removed."
