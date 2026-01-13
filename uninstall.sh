@@ -68,14 +68,6 @@ if [[ -f /etc/prusa_cam.conf ]]; then
     fi
 fi
 
-# Ask about ustreamer
-echo ""
-read -p "Remove uStreamer? [y/N]: " remove_ustreamer < /dev/tty
-if [[ "$remove_ustreamer" == "y" || "$remove_ustreamer" == "Y" ]]; then
-    rm -f /usr/local/bin/ustreamer
-    echo "uStreamer removed."
-fi
-
 echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  Uninstall Complete${NC}"

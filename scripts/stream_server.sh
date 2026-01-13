@@ -197,32 +197,28 @@ while True:
     "USB")
         echo "Starting USB webcam stream..."
 
-        # Check if ustreamer is available
-        if command -v ustreamer &> /dev/null; then
-            # USB cameras use V4L2 directly with ustreamer
-            ustreamer \
-                --device "$CAMERA_DEVICE" \
-                --host 0.0.0.0 \
-                --port "$STREAM_PORT" \
-                --resolution "${STREAM_WIDTH}x${STREAM_HEIGHT}" \
-                --format MJPEG \
-                --workers 2 \
-                --drop-same-frames 30
-        elif command -v ffmpeg &> /dev/null; then
-            # Fallback to ffmpeg + python server
-            ffmpeg -f v4l2 -input_format mjpeg \
-                -video_size "${STREAM_WIDTH}x${STREAM_HEIGHT}" \
-                -framerate 15 \
-                -i "$CAMERA_DEVICE" \
-                -c:v mjpeg -q:v 5 \
-                -f mjpeg - 2>/dev/null | python3 -c "
+        if ! command -v ffmpeg &> /dev/null; then
+            echo "ERROR: ffmpeg not found"
+            exit 1
+        fi
+
+        # Use ffmpeg + python server for USB cameras
+        ffmpeg -f v4l2 -input_format mjpeg \
+            -video_size "${STREAM_WIDTH}x${STREAM_HEIGHT}" \
+            -framerate 15 \
+            -i "$CAMERA_DEVICE" \
+            -c:v mjpeg -q:v 5 \
+            -f mjpeg - 2>/dev/null | python3 -c "
 import sys
 import socket
 import threading
+import time
+import os
 
-# Same Python server as above...
 HOST = '0.0.0.0'
 PORT = $STREAM_PORT
+SNAPSHOT_FILE = '/tmp/stream_snapshot.jpg'
+SNAPSHOT_INTERVAL = 2
 
 BOUNDARY = b'--FRAME'
 HEADERS = (
@@ -249,7 +245,6 @@ def handle_client(conn, addr):
                     conn.sendall(BOUNDARY + b'\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
                 except:
                     break
-            import time
             time.sleep(0.066)
     except:
         pass
@@ -261,15 +256,34 @@ def server_thread():
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((HOST, PORT))
     server.listen(5)
+    print(f'Stream server listening on http://{HOST}:{PORT}/')
     while True:
         conn, addr = server.accept()
         t = threading.Thread(target=handle_client, args=(conn, addr))
         t.daemon = True
         t.start()
 
+def snapshot_saver_thread():
+    while True:
+        time.sleep(SNAPSHOT_INTERVAL)
+        with frame_lock:
+            frame = current_frame
+        if frame:
+            try:
+                tmp_file = SNAPSHOT_FILE + '.tmp'
+                with open(tmp_file, 'wb') as f:
+                    f.write(frame)
+                os.rename(tmp_file, SNAPSHOT_FILE)
+            except:
+                pass
+
 t = threading.Thread(target=server_thread)
 t.daemon = True
 t.start()
+
+ss = threading.Thread(target=snapshot_saver_thread)
+ss.daemon = True
+ss.start()
 
 buffer = b''
 SOI = b'\xff\xd8'
@@ -294,10 +308,6 @@ while True:
         with frame_lock:
             current_frame = frame
 "
-        else
-            echo "ERROR: No streaming tool available (ustreamer/ffmpeg)"
-            exit 1
-        fi
         ;;
 
     *)

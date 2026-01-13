@@ -48,7 +48,7 @@ print_success() {
     echo -e "${GREEN}SUCCESS:${NC} $1"
 }
 
-TOTAL_STEPS=7
+TOTAL_STEPS=6
 
 # ============================================
 # Pre-flight checks
@@ -86,46 +86,17 @@ apt-get update -qq
 # Core dependencies
 apt-get install -y -qq \
     curl \
-    git \
     v4l-utils \
-    fswebcam \
+    python3 \
     ffmpeg
-
-# Build dependencies for ustreamer
-apt-get install -y -qq \
-    build-essential \
-    libevent-dev \
-    libjpeg-dev \
-    libbsd-dev
 
 echo "  Dependencies installed."
 
 # ============================================
-# Step 2: Build and install uStreamer
+# Step 2: Download and install scripts
 # ============================================
 
-print_step 2 "Installing uStreamer..."
-
-if command -v ustreamer &> /dev/null; then
-    echo "  uStreamer already installed, skipping build."
-else
-    echo "  Building uStreamer from source..."
-    cd /tmp
-    rm -rf ustreamer 2>/dev/null || true
-    git clone --depth=1 https://github.com/pikvm/ustreamer.git
-    cd ustreamer
-    make -j$(nproc) > /dev/null 2>&1
-    make install > /dev/null 2>&1
-    cd /
-    rm -rf /tmp/ustreamer
-    echo "  uStreamer installed."
-fi
-
-# ============================================
-# Step 3: Download and install scripts
-# ============================================
-
-print_step 3 "Setting up installation directory..."
+print_step 2 "Setting up installation directory..."
 
 mkdir -p "$INSTALL_DIR"/{scripts,config,web}
 
@@ -155,10 +126,10 @@ chmod +x "$INSTALL_DIR/scripts/"*.sh
 echo "  Scripts installed to $INSTALL_DIR"
 
 # ============================================
-# Step 4: Detect and select camera
+# Step 3: Detect and select camera
 # ============================================
 
-print_step 4 "Detecting cameras..."
+print_step 3 "Detecting cameras..."
 
 # Source the detection script
 source "$INSTALL_DIR/scripts/detect_cameras.sh"
@@ -179,10 +150,10 @@ echo ""
 echo -e "  Selected: ${GREEN}$CAMERA_NAME${NC}"
 
 # ============================================
-# Step 5: Configure Prusa Connect
+# Step 4: Configure Prusa Connect
 # ============================================
 
-print_step 5 "Configuring Prusa Connect..."
+print_step 4 "Configuring Prusa Connect..."
 
 echo ""
 echo "To get your camera token:"
@@ -250,10 +221,10 @@ chmod 600 /etc/prusa_cam.conf
 echo "  Configuration saved to /etc/prusa_cam.conf"
 
 # ============================================
-# Step 6: Install systemd services
+# Step 5: Install systemd services
 # ============================================
 
-print_step 6 "Installing systemd services..."
+print_step 5 "Installing systemd services..."
 
 # Prusa Connect Upload Service
 cat > /etc/systemd/system/prusa-connect-upload.service << 'EOF'
@@ -306,10 +277,10 @@ systemctl enable camera-stream.service
 echo "  Services installed and enabled."
 
 # ============================================
-# Step 7: Start services
+# Step 6: Start services
 # ============================================
 
-print_step 7 "Starting services..."
+print_step 6 "Starting services..."
 
 systemctl start camera-stream.service
 sleep 2
