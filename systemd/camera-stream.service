@@ -1,0 +1,25 @@
+[Unit]
+Description=Camera MJPEG Stream Server
+Documentation=https://github.com/Houzvicka/RPi-Prusa-Connect-Cam
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/prusa-cam/scripts/stream_server.sh
+Restart=always
+RestartSec=5
+User=root
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=camera-stream
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/tmp
+
+[Install]
+WantedBy=multi-user.target

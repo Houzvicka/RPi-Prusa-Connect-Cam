@@ -1,0 +1,26 @@
+[Unit]
+Description=Prusa Connect Camera Upload Service
+Documentation=https://github.com/Houzvicka/RPi-Prusa-Connect-Cam
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/prusa-cam/scripts/prusa_connect_upload.sh
+Restart=always
+RestartSec=10
+User=root
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=prusa-connect-upload
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/tmp
+
+[Install]
+WantedBy=multi-user.target
