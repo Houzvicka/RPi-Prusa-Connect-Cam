@@ -59,9 +59,13 @@ case "$CAMERA_TYPE" in
 import sys
 import socket
 import threading
+import time
+import os
 
 HOST = '0.0.0.0'
 PORT = $STREAM_PORT
+SNAPSHOT_FILE = '/tmp/stream_snapshot.jpg'
+SNAPSHOT_INTERVAL = 2  # Save snapshot every 2 seconds
 
 BOUNDARY = b'--FRAME'
 HEADERS = (
@@ -79,17 +83,14 @@ frame_lock = threading.Lock()
 
 def handle_client(conn, addr):
     try:
-        # Read the HTTP request (and ignore it)
         conn.recv(4096)
         conn.sendall(HEADERS)
 
         with clients_lock:
             clients.append(conn)
 
-        # Keep connection open, frames sent by main thread
         while True:
             try:
-                # Check if connection is still alive
                 conn.setblocking(False)
                 try:
                     data = conn.recv(1, socket.MSG_PEEK)
@@ -108,8 +109,7 @@ def handle_client(conn, addr):
                     except:
                         break
 
-                import time
-                time.sleep(0.066)  # ~15fps
+                time.sleep(0.066)
             except:
                 break
     except:
@@ -128,7 +128,7 @@ def server_thread():
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((HOST, PORT))
     server.listen(5)
-    print(f'Stream server listening on http://{HOST}:{PORT}/stream')
+    print(f'Stream server listening on http://{HOST}:{PORT}/')
 
     while True:
         try:
@@ -139,15 +139,35 @@ def server_thread():
         except:
             pass
 
-# Start server in background
+def snapshot_saver_thread():
+    \"\"\"Periodically save current frame to file for upload service\"\"\"
+    while True:
+        time.sleep(SNAPSHOT_INTERVAL)
+        with frame_lock:
+            frame = current_frame
+        if frame:
+            try:
+                tmp_file = SNAPSHOT_FILE + '.tmp'
+                with open(tmp_file, 'wb') as f:
+                    f.write(frame)
+                os.rename(tmp_file, SNAPSHOT_FILE)
+            except Exception as e:
+                pass
+
+# Start server thread
 t = threading.Thread(target=server_thread)
 t.daemon = True
 t.start()
 
+# Start snapshot saver thread
+ss = threading.Thread(target=snapshot_saver_thread)
+ss.daemon = True
+ss.start()
+
 # Read MJPEG frames from stdin
 buffer = b''
-SOI = b'\xff\xd8'  # JPEG Start Of Image
-EOI = b'\xff\xd9'  # JPEG End Of Image
+SOI = b'\xff\xd8'
+EOI = b'\xff\xd9'
 
 while True:
     chunk = sys.stdin.buffer.read(4096)
