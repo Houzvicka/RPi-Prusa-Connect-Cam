@@ -74,11 +74,6 @@ fi
 
 echo "This script will install and configure the Prusa Connect camera service."
 echo ""
-read -p "Continue with installation? [Y/n]: " confirm < /dev/tty
-if [[ "$confirm" == "n" || "$confirm" == "N" ]]; then
-    echo "Installation cancelled."
-    exit 0
-fi
 
 # ============================================
 # Step 1: Install dependencies
