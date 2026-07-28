@@ -34,6 +34,132 @@ echo "Stream Port: $STREAM_PORT"
 echo "Resolution: ${STREAM_WIDTH}x${STREAM_HEIGHT}"
 echo ""
 
+V4L2_CONTROLS_CACHE=""
+V4L2_CONTROLS_LOADED=false
+
+load_v4l2_controls() {
+    if [[ "$V4L2_CONTROLS_LOADED" == "true" ]]; then
+        [[ -n "$V4L2_CONTROLS_CACHE" ]]
+        return
+    fi
+
+    V4L2_CONTROLS_LOADED=true
+
+    if [[ -z "${CAMERA_DEVICE:-}" ]]; then
+        echo "WARNING: CAMERA_DEVICE is not configured; skipping camera capability detection"
+        return 1
+    fi
+
+    if ! command -v v4l2-ctl &> /dev/null; then
+        echo "WARNING: v4l2-ctl not found; skipping camera capability detection"
+        return 1
+    fi
+
+    V4L2_CONTROLS_CACHE=$(v4l2-ctl -d "$CAMERA_DEVICE" --list-ctrls 2>/dev/null || true)
+}
+
+has_v4l2_control() {
+    local control_name="$1"
+
+    load_v4l2_controls || return 1
+    [[ "$V4L2_CONTROLS_CACHE" =~ (^|[[:space:]])${control_name}[[:space:]] ]]
+}
+
+log_capability() {
+    local label="$1"
+    local control_name="$2"
+    local available="no"
+
+    if has_v4l2_control "$control_name"; then
+        available="yes"
+    fi
+
+    printf '  %-22s %s\n' "$label" "$available"
+}
+
+apply_v4l2_setting() {
+    local control_name="$1"
+    local value="$2"
+
+    if ! has_v4l2_control "$control_name"; then
+        echo "WARNING: Camera control '$control_name' is not supported; skipping"
+        return 0
+    fi
+
+    if v4l2-ctl -d "$CAMERA_DEVICE" --set-ctrl "${control_name}=${value}" &> /dev/null; then
+        echo "Applied camera control '${control_name}=${value}'"
+    else
+        echo "WARNING: Failed to apply camera control '${control_name}=${value}'; continuing"
+    fi
+}
+
+configure_focus() {
+    if [[ "${AUTOFOCUS_ENABLED:-}" =~ ^([Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|1|on)$ ]]; then
+        apply_v4l2_setting "focus_auto" "1"
+    elif [[ "${AUTOFOCUS_ENABLED:-}" =~ ^([Ff][Aa][Ll][Ss][Ee]|[Nn][Oo]|0|off)$ ]]; then
+        apply_v4l2_setting "focus_auto" "0"
+
+        if [[ -n "${FOCUS_ABSOLUTE:-}" ]]; then
+            apply_v4l2_setting "focus_absolute" "$FOCUS_ABSOLUTE"
+        fi
+    elif [[ -n "${FOCUS_ABSOLUTE:-}" ]]; then
+        apply_v4l2_setting "focus_absolute" "$FOCUS_ABSOLUTE"
+    fi
+
+    echo "✓ Focus configured"
+}
+
+configure_exposure() {
+    if has_v4l2_control "exposure_auto" || has_v4l2_control "exposure_absolute"; then
+        echo "Exposure controls available; no exposure configuration requested"
+    else
+        echo "Exposure controls unavailable; skipping"
+    fi
+
+    echo "✓ Exposure skipped"
+}
+
+configure_image_controls() {
+    local controls=(brightness contrast gain saturation white_balance_temperature sharpness)
+    local control_name
+    local available_controls=()
+
+    for control_name in "${controls[@]}"; do
+        if has_v4l2_control "$control_name"; then
+            available_controls+=("$control_name")
+        fi
+    done
+
+    if (( ${#available_controls[@]} > 0 )); then
+        echo "Image controls available: ${available_controls[*]}"
+    else
+        echo "No supported image controls detected"
+    fi
+
+    echo "✓ Image controls skipped"
+}
+
+configure_camera() {
+    echo "Camera capabilities"
+    echo "-------------------"
+    log_capability "Autofocus" "focus_auto"
+    log_capability "Manual focus" "focus_absolute"
+    log_capability "Exposure auto" "exposure_auto"
+    log_capability "Exposure absolute" "exposure_absolute"
+    log_capability "Brightness" "brightness"
+    log_capability "Contrast" "contrast"
+    log_capability "Gain" "gain"
+    log_capability "Saturation" "saturation"
+    log_capability "White balance" "white_balance_temperature"
+    log_capability "Sharpness" "sharpness"
+    echo ""
+    echo "Applying camera configuration..."
+    configure_focus
+    configure_exposure
+    configure_image_controls
+    echo ""
+}
+
 case "$CAMERA_TYPE" in
     "RPI")
         echo "Starting RPi camera stream..."
@@ -204,6 +330,8 @@ while True:
             echo "ERROR: ffmpeg not found"
             exit 1
         fi
+
+        configure_camera
 
         # Use ffmpeg + python server for USB cameras
         ffmpeg -f v4l2 -input_format mjpeg \
