@@ -17,6 +17,15 @@ fi
 # Load configuration
 source "$CONFIG_FILE"
 
+# Set camera name
+curl -s -X PUT "https://connect.prusa3d.com/c/info" \
+    -H "accept: application/json" \
+    -H "content-type: application/json" \
+    -H "fingerprint: $FINGERPRINT" \
+    -H "token: $TOKEN" \
+    --data "{\"config\":{\"name\": \"$CAMERA_NAME\"}}" \
+    --no-progress-meter
+
 # API endpoint
 HTTP_URL="https://connect.prusa3d.com/c/snapshot"
 
